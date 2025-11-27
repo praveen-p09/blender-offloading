@@ -19,6 +19,8 @@ set(INC_SYS
   ${ZSTD_INCLUDE_DIRS}
 )
 
+option(WITH_RACER "Enable RacEr FPGA acceleration" ON)
+
 set(SRC
   intern/BLI_assert.cc
   intern/BLI_color.cc
@@ -39,6 +41,7 @@ set(SRC
   intern/BLI_mmap.cc
   intern/BLI_subprocess.cc
   intern/BLI_timer.cc
+  intern/bridge.cpp
   intern/array_store.cc
   intern/array_store_rle.cc
   intern/array_store_utils.cc
@@ -416,6 +419,28 @@ set(SRC
   # Without these files listed, they aren't known to CMake.
   ../../../extern/json/include/json.hpp
 )
+
+if(WITH_RACER)
+  set(RACER_ROOT "/home/ec2-user/SO_RacEr_Float/tfr/RacEr_bladerunner")
+  
+  include_directories(
+    ${RACER_ROOT}/RacEr_manycore/software/RacEr_manycore_lib
+    ${RACER_ROOT}/RacEr_manycore/software/spmd/common  
+    ${RACER_ROOT}/RacEr_f1/regression/cuda
+  )
+  
+  find_library(RACER_LIB
+    NAMES RacEr_manycore_runtime
+    PATHS ${RACER_ROOT}/lib ${RACER_ROOT}/RacEr_f1/lib
+    NO_DEFAULT_PATH
+  )
+  
+  if(RACER_LIB)
+    list(APPEND SRC intern/host.c)
+    list(APPEND LIB ${RACER_LIB})
+    add_definitions(-DWITH_RACER)
+  endif()
+endif()
 
 set(LIB
   PUBLIC bf::dna
